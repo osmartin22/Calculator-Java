@@ -59,10 +59,10 @@ public class Calculator {
                     }
                 }
 
-                int value = parseNextNum(offset);
-                numberStack.push((double) value);
+                NumHelper value = parseNextNum(offset);
+                numberStack.push((double) value.num);
 
-                offset += Integer.toString(value).length();
+                offset += value.stringNumLength;
                 if (offset >= operation.length()) {
                     break;
                 }
@@ -73,13 +73,7 @@ public class Calculator {
                     operatorStack.push(operator);
 
                 } else if (operator == Operator.CLOSEPAREN) {
-                    // COLLAPSE TILL FIRST OPENPAREN
-                    // MAYBE PARSE NEXT OP FOR CASES LIKE 53 + (2/2) + 2
-                    // BECOMES 53 + 1 + 2 AFTER COLLAPSE
-                    // BUT NEXT TO BE READ IS "+"
                     operatorStack.push(operator);
-                    //TODO: CHECK NEXT VALUE TO DECIDE IF ADDING * IS NEEDED
-                    // OR COULD PEEK STACK BEFORE PARSING NUM AND PUSH * IF TOP IS ")"
 
                 } else {
 //                    collapseTop(operator);
@@ -121,7 +115,7 @@ public class Calculator {
     private Integer checkFutureOp(int offset) {
         Operator futureOp = parseNextOp(offset);
         if (futureOp != Operator.BLANK) {
-            // CHECKING AHEAD FOR PAREN
+
             if (futureOp == Operator.OPENPAREN) {
                 operatorStack.push(Operator.OPENPAREN);
                 offset++;
@@ -244,7 +238,7 @@ public class Calculator {
         return false;
     }
 
-    private int parseNextNum(int offset) {
+    private NumHelper parseNextNum(int offset) {
         StringBuilder sb = new StringBuilder();
 
 //        while (offset < operation.length() && (Character.isDigit(c) || c == '.')) {
@@ -253,7 +247,7 @@ public class Calculator {
             offset++;
         }
 
-        return Integer.parseInt(sb.toString());
+        return new NumHelper(Integer.parseInt(sb.toString()), sb.length());
     }
 
     private Operator parseNextOp(int offset) {
@@ -306,6 +300,16 @@ public class Calculator {
             case BLANK:
             default:
                 return 0;
+        }
+    }
+
+    private class NumHelper {
+        private int stringNumLength;
+        private int num;
+
+        private NumHelper(int num, int stringNumLength) {
+            this.num = num;
+            this.stringNumLength = stringNumLength;
         }
     }
 }
