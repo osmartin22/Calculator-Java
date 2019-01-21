@@ -42,36 +42,30 @@ public class Calculator {
 
     public Double compute() {
 
-        Integer preCheckOffset = preCheckInput();
+        Integer preCheckOffset = preOpParse();
         if (preCheckOffset == null) {
             return null;
         }
 
-        for (int offset = preCheckOffset; offset < operation.length(); offset++) {
+        for (Integer offset = preCheckOffset; offset < operation.length(); offset++) {
             try {
 
-                // Add a "*" to stack if last operand added was ")"
-                checkForCloseParen();
                 NumHelper value = parseNextNum(offset);
                 numberStack.push((double) value.num);
+
+                System.out.println(value.num + " PCount: " + parenCount);
 
                 offset += value.stringNumLength;
                 if (offset >= operation.length()) {
                     break;
                 }
 
-                handleOperatorInput(offset);
-
-                // CHECK FUTURE OP IF "(" or ")"
-                if (++offset < operation.length()) {
-                    Integer tempOffset = checkFutureOp(offset);
-                    if (tempOffset == null) {
-                        return null;
-                    }
-
-                    offset = tempOffset;
-
+                offset = handleOperatorInput(offset);
+                if (offset == null || parenCount < 0) {
+                    return null;
                 }
+
+//                checkForCloseParen();
 
             } catch (NumberFormatException e) {
                 System.out.println("ERROR " + e.getMessage());
@@ -79,7 +73,7 @@ public class Calculator {
             }
         }
 
-        collapseParen();
+//        collapseParen();
 //        collapseTop(Operator.BLANK);
 //        if (numberStack.size() == 1 && operatorStack.size() == 0) {
 //        }
@@ -94,28 +88,41 @@ public class Calculator {
     // Only to be called after parsing in a num and op
     // Returns null if next parse is an operation that is
     // not "(" or ")" meaning it is invalid input
-    private Integer checkFutureOp(int offset) {
+    private Integer checkFutureOp(Operator currentOp, int offset) {
         Operator futureOp = parseNextOp(offset);
         if (futureOp != Operator.BLANK) {
 
             if (futureOp == Operator.OPENPAREN) {
-                operatorStack.push(Operator.OPENPAREN);
+                operatorStack.push(futureOp);
+                parenCount++;
 
             } else if (futureOp == Operator.CLOSEPAREN) {
-                if (prevIsOpenParen()) {
+                if (prevIsOpenParen() || --parenCount < 0) {
                     return null;
                 }
+
+                // MAYBE COLLAPSE INPUT HERE AFTER DECIDING IF * IS NECESSARY
 
                 operatorStack.push(futureOp);   // COLLAPSE TILL FIRST OPENPAREN
             }
 
             // Next parsed operator creates invalid input
-            else {
+            else if (currentOp != Operator.CLOSEPAREN) {
                 return null;
             }
 
             return parseNextSetOfOps(++offset);
         }
+
+        // MAYBE
+        // if offset < length
+        //      check if current is CLOSEPAREN
+        //      collapse and push MULTIPLY
+
+        // OR
+        // CHECK IF CLOSEPAREN AT START OF METHOD
+        // HEN PUSH MULTIPLY IF NEEDED AFTER CHECKING NEXT OPS
+
 
         return --offset;
     }
@@ -124,11 +131,16 @@ public class Calculator {
         Operator operator = parseNextOp(offset);
         while (operator != Operator.BLANK) {
 
-            if (prevIsOpenParen() && operator == Operator.CLOSEPAREN) {
+            if (prevIsOpenParen() && operator != Operator.OPENPAREN) {
                 return null;
             }
 
-            operatorStack.push(operator);
+            if (operator == Operator.OPENPAREN) {
+                parenCount++;
+                operatorStack.push(operator);
+            }
+
+
             operator = parseNextOp(++offset);
         }
         return --offset;
@@ -146,14 +158,17 @@ public class Calculator {
                 Operator operator = operatorStack.pop();
                 double collapsed = applyOp(first, operator, second);
                 numberStack.push(collapsed);
+
             } else {
                 break;
             }
         }
     }
 
+
+    // TODO: MAKE SURE TO HANDLE (53) CORRECTLY
     private void collapseParen() {
-        operatorStack.pop();
+        operatorStack.pop();    // Pop ")"
         while (operatorStack.size() >= 1 && numberStack.size() >= 2 && operatorStack.peek() != Operator.OPENPAREN) {
             double second = numberStack.pop();
             double first = numberStack.pop();
@@ -164,79 +179,66 @@ public class Calculator {
             System.out.println(first + " " + operator + " " + second + " = " + collapsed);
         }
 
-        operatorStack.pop();
+        operatorStack.pop();    // Pop "("
     }
 
-    private void handleOperatorInput(int offset) {
+    private Integer handleOperatorInput(Integer offset) {
         Operator operator = parseNextOp(offset);
-        if (operator == Operator.OPENPAREN) {
-            operatorStack.push(Operator.MULTIPLY);
-            operatorStack.push(operator);
-
-        } else if (operator == Operator.CLOSEPAREN) {
-            operatorStack.push(operator);
-
-        } else {
-            collapseTop(operator);
-            operatorStack.push(operator);
-        }
-    }
-
-    private void checkForCloseParen() {
-        if (!operatorStack.isEmpty() && !numberStack.isEmpty()) {
-            if (operatorStack.peek() == Operator.CLOSEPAREN) {
-                collapseParen();
+        if (operator == Operator.OPENPAREN || operator == Operator.CLOSEPAREN) {
+            if (operator == Operator.OPENPAREN) {
                 operatorStack.push(Operator.MULTIPLY);
-            }
-        }
-    }
-
-    private Integer preCheckInput() {
-        int offset = 0;
-        Operator firstOp = parseNextOp(offset);
-        if (firstOp != Operator.BLANK) {
-            if (firstOp == Operator.OPENPAREN) {
-                operatorStack.push(Operator.OPENPAREN);
+                operatorStack.push(operator);
                 parenCount++;
 
-                Integer tempOffset = preParseOps(++offset);
-                if (tempOffset == null) {
-                    return null;
-                }
-                offset = tempOffset;
-
             } else {
-                return null;
+                operatorStack.push(operator);
+                parenCount--;
             }
+
+            // CHECK NEXT OPS
+            if (++offset < operation.length()) {
+                offset = checkFutureOp(operator, offset);
+
+            }
+
+        } else {
+//            collapseTop(operator);
+            operatorStack.push(operator);
         }
 
         return offset;
     }
 
-    // If any operands besides "(" or ")" show up, input is invalid
-    // If "()" shows up, mark as invalid input
-    private Integer preParseOps(int offset) {
+    // Parse at the start for any ops that can make the input invalid
+    private Integer preOpParse() {
+        int offset = 0;
         Operator operator = parseNextOp(offset);
-        while (operator != Operator.BLANK) {
-
-            if (prevIsOpenParen() && operator == Operator.CLOSEPAREN ||
-                    operator != Operator.OPENPAREN && operator != Operator.CLOSEPAREN) {
-                return null;
-            }
-
-            // TODO: MIGHT HAVE TO SWAP 2 AND 3 TO INCREMENT parenCount CORRECTLY
+        while (operator == Operator.OPENPAREN) {
             operatorStack.push(operator);
-            operator = parseNextOp(++offset);
-            parenCount = (operator == Operator.OPENPAREN) ? ++parenCount : --parenCount;
+            parenCount++;
+            offset++;
 
+            operator = parseNextOp(offset);
         }
 
-        return (parenCount < 0) ? null : offset;
+        // Invalid op appeared
+        if (operator != Operator.BLANK) {
+            return null;
+        }
+
+        return offset;
     }
 
     private boolean prevIsOpenParen() {
         if (!operatorStack.isEmpty()) {
             return operatorStack.peek() == Operator.OPENPAREN;
+        }
+        return false;
+    }
+
+    private boolean prevIsCloseParen() {
+        if (!operatorStack.isEmpty()) {
+            return operatorStack.peek() == Operator.CLOSEPAREN;
         }
         return false;
     }

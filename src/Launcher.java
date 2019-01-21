@@ -2,7 +2,7 @@
 public class Launcher {
 
     public static void main(String[] args) {
-        String operation = "5 + 2 (53 + (2 / 2) + 1)";
+        String operation = "5 + 2 (((53) + (2+5) 2 / 2) 7)";
 
         System.out.println(operation);
         Calculator calculator = new Calculator(operation);
@@ -17,6 +17,8 @@ public class Launcher {
 
 //        System.out.println(Double.parseDouble("2.00000"));
     }
+
+    // ((5+2))) 2 + 8
 
 
     // 5 + 2 ((2 + 3 (2*2) 3) + 9)
@@ -39,9 +41,6 @@ public class Launcher {
 
 
     // 5 + 2 (((53) + (2+5) 2 / 2) 7)
-
-    // 5 2 53
-    // + * ( ( ( ) + (
 
 
 
