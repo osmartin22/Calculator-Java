@@ -200,13 +200,6 @@ System.out.println(offset);
     }
 
 
-
-
-
-
-
-    
-
     private Integer preCheckInput() {
         int offset = 0;
         Operator firstOp = parseNextOp(offset);
