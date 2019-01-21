@@ -1,7 +1,5 @@
 import java.util.Stack;
 
-// TODO: CHANG TO RETURN INTEGER/DOUBLE TO BE ABLE TO ]
-// RETURN A NULL VALUE FOR INVALID INPUT
 public class Calculator {
 
     private enum Operator {
@@ -53,12 +51,7 @@ public class Calculator {
             try {
 
                 // Add a "*" to stack if last operand added was ")"
-                if (!operatorStack.isEmpty() && !numberStack.isEmpty()) {
-                    if (operatorStack.peek() == Operator.CLOSEPAREN) {
-                        operatorStack.push(Operator.MULTIPLY);
-                    }
-                }
-
+                checkForCloseParen();
                 NumHelper value = parseNextNum(offset);
                 numberStack.push((double) value.num);
 
@@ -67,18 +60,7 @@ public class Calculator {
                     break;
                 }
 
-                Operator operator = parseNextOp(offset);
-                if (operator == Operator.OPENPAREN) {
-                    operatorStack.push(Operator.MULTIPLY);
-                    operatorStack.push(operator);
-
-                } else if (operator == Operator.CLOSEPAREN) {
-                    operatorStack.push(operator);
-
-                } else {
-//                    collapseTop(operator);
-                    operatorStack.push(operator);
-                }
+                handleOperatorInput(offset);
 
                 // CHECK FUTURE OP IF "(" or ")"
                 if (++offset < operation.length()) {
@@ -97,7 +79,7 @@ public class Calculator {
             }
         }
 
-
+        collapseParen();
 //        collapseTop(Operator.BLANK);
 //        if (numberStack.size() == 1 && operatorStack.size() == 0) {
 //        }
@@ -118,17 +100,13 @@ public class Calculator {
 
             if (futureOp == Operator.OPENPAREN) {
                 operatorStack.push(Operator.OPENPAREN);
-                offset++;
-
 
             } else if (futureOp == Operator.CLOSEPAREN) {
                 if (prevIsOpenParen()) {
                     return null;
                 }
 
-                // COLLAPSE TILL FIRST OPENPAREN
-                operatorStack.push(futureOp);
-                offset++;
+                operatorStack.push(futureOp);   // COLLAPSE TILL FIRST OPENPAREN
             }
 
             // Next parsed operator creates invalid input
@@ -136,12 +114,11 @@ public class Calculator {
                 return null;
             }
 
-            return parseNextSetOfOps(offset);
+            return parseNextSetOfOps(++offset);
         }
 
         return --offset;
     }
-
 
     private Integer parseNextSetOfOps(int offset) {
         Operator operator = parseNextOp(offset);
@@ -176,13 +153,43 @@ public class Calculator {
     }
 
     private void collapseParen() {
+        operatorStack.pop();
         while (operatorStack.size() >= 1 && numberStack.size() >= 2 && operatorStack.peek() != Operator.OPENPAREN) {
+            double second = numberStack.pop();
+            double first = numberStack.pop();
+            Operator operator = operatorStack.pop();
+            double collapsed = applyOp(first, operator, second);
+            numberStack.push(collapsed);
 
+            System.out.println(first + " " + operator + " " + second + " = " + collapsed);
         }
 
         operatorStack.pop();
     }
 
+    private void handleOperatorInput(int offset) {
+        Operator operator = parseNextOp(offset);
+        if (operator == Operator.OPENPAREN) {
+            operatorStack.push(Operator.MULTIPLY);
+            operatorStack.push(operator);
+
+        } else if (operator == Operator.CLOSEPAREN) {
+            operatorStack.push(operator);
+
+        } else {
+            collapseTop(operator);
+            operatorStack.push(operator);
+        }
+    }
+
+    private void checkForCloseParen() {
+        if (!operatorStack.isEmpty() && !numberStack.isEmpty()) {
+            if (operatorStack.peek() == Operator.CLOSEPAREN) {
+                collapseParen();
+                operatorStack.push(Operator.MULTIPLY);
+            }
+        }
+    }
 
     private Integer preCheckInput() {
         int offset = 0;
@@ -217,18 +224,14 @@ public class Calculator {
                 return null;
             }
 
+            // TODO: MIGHT HAVE TO SWAP 2 AND 3 TO INCREMENT parenCount CORRECTLY
             operatorStack.push(operator);
             operator = parseNextOp(++offset);
             parenCount = (operator == Operator.OPENPAREN) ? ++parenCount : --parenCount;
 
         }
 
-        // More closed parenthesis than open
-        if (parenCount < 0) {
-            return null;
-        }
-
-        return offset;
+        return (parenCount < 0) ? null : offset;
     }
 
     private boolean prevIsOpenParen() {
@@ -287,15 +290,15 @@ public class Calculator {
         switch (operator) {
             case ADD:
             case SUBTRACT:
-                return 1;
+                return 2;
 
             case MULTIPLY:
             case DIVIDE:
-                return 2;
+                return 3;
 
             case OPENPAREN:
             case CLOSEPAREN:
-                return 3;
+                return 1;
 
             case BLANK:
             default:

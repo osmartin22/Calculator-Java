@@ -2,7 +2,7 @@
 public class Launcher {
 
     public static void main(String[] args) {
-        String operation = "(5 + 002 (53 + (2+5) 2 / 2) 7)";
+        String operation = "5 + 2 (53 + (2 / 2) + 1)";
 
         System.out.println(operation);
         Calculator calculator = new Calculator(operation);
@@ -55,10 +55,6 @@ public class Launcher {
 
     // 5 + 2 ((53 + (2+5) 2 / 2) 7)
 
-    // TODO: CHECK AFTER CLOSEPAREN FOR OPERAND OR NUM
-    // 5 2 53 2 5
-    // + * ( ( + ( + )
+    // 5 + 2 ((53 + (2+5)
 
-    // 5 2 53 2 5 2 2 7
-    // + * ( ( + ( + ) * / ) * )
 }
