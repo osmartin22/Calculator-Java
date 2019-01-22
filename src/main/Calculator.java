@@ -19,6 +19,17 @@ public class Calculator {
         operatorStack = new Stack<>();
     }
 
+    public void setOperation(String operation) {
+        this.operation = operation.replaceAll("\\s+", "");
+        resetCalculator();
+    }
+
+    public void resetCalculator() {
+        numberStack.clear();
+        operatorStack.clear();
+        parenCount = 0;
+    }
+
     public Double compute() {
 
         Integer preCheckOffset = preOpParse();
@@ -29,7 +40,7 @@ public class Calculator {
         for (Integer offset = preCheckOffset; offset < operation.length(); offset++) {
             try {
                 NumHelper value = parseNextNum(offset);
-                numberStack.push((double) value.num);
+                numberStack.push(value.num);
 
                 offset += value.stringNumLength;
                 if (offset >= operation.length()) {
@@ -83,7 +94,9 @@ public class Calculator {
 
             } else {
                 operatorStack.push(Operator.CLOSEPAREN);
-                parenCount--;
+                if (--parenCount < 0) {
+                    return null;
+                }
                 collapseParen();
             }
 
@@ -104,13 +117,13 @@ public class Calculator {
     private NumHelper parseNextNum(int offset) {
         StringBuilder sb = new StringBuilder();
 
-//        while (offset < operation.length() && (Character.isDigit(c) || c == '.')) {
-        while (offset < operation.length() && Character.isDigit(operation.charAt(offset))) {
+        while (offset < operation.length() &&
+                (Character.isDigit(operation.charAt(offset)) || operation.charAt(offset) == '.')) {
             sb.append(operation.charAt(offset));
             offset++;
         }
 
-        return new NumHelper(Integer.parseInt(sb.toString()), sb.length());
+        return new NumHelper(Double.parseDouble(sb.toString()), sb.length());
     }
 
     private Operator parseNextOp(int offset) {
@@ -267,9 +280,9 @@ public class Calculator {
 
     private class NumHelper {
         private int stringNumLength;
-        private int num;
+        private double num;
 
-        private NumHelper(int num, int stringNumLength) {
+        private NumHelper(double num, int stringNumLength) {
             this.num = num;
             this.stringNumLength = stringNumLength;
         }
