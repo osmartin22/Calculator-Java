@@ -2,7 +2,7 @@
 public class Launcher {
 
     public static void main(String[] args) {
-        String operation = "(5+2) + 7 + (9*2)";
+        String operation = "5 + 2 ((53 + (2+5)))";
 
         System.out.println(operation);
         Calculator calculator = new Calculator(operation);
@@ -20,44 +20,23 @@ public class Launcher {
 
     // ((5+2))) 2 + 8
 
-    // (5+2) + 7 + (9*2) TODO: TEST
-
-
-
+    // (5+2) + 7 + (9*2)
 
     // 5 + 2 ((2 + 3 (2*2) 3) + 9)
 
-    // Stack    5 +
-    // prevOp   BLANK
-    // Count
-
-
-
     // (1+2*3+4/5*6)
-
-
 
     // 5 + 2 (53 + (2 / 2) + 1)
 
-    // 5 2 53
-    // + * ( + check next op
-
-
-
     // 5 + 2 (((53) + (2+5) 2 / 2) 7)
-
-
-
-    // 5 + (2 + 3)
-
-    // 5 5
-    // + ( )
 
     // ((3 + 2))
 
-
     // 5 + 2 ((53 + (2+5) 2 / 2) 7)
 
-    // 5 + 2 ((53 + (2+5)
 
+    // TODO: WRONG
+    // (5 + (2 + 3))    but     5 + (2 + 3) is correct
+
+    // 5 + 2 ((53 + (2+5)
 }

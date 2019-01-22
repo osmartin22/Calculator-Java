@@ -49,11 +49,8 @@ public class Calculator {
 
         for (Integer offset = preCheckOffset; offset < operation.length(); offset++) {
             try {
-
                 NumHelper value = parseNextNum(offset);
                 numberStack.push((double) value.num);
-
-//                System.out.println(value.num + " PCount: " + parenCount);
 
                 offset += value.stringNumLength;
                 if (offset >= operation.length()) {
@@ -65,20 +62,22 @@ public class Calculator {
                     return null;
                 }
 
-//                if(offset >= operation.length()) {
-//                    break;
-//                }
-
-//                checkForCloseParen();
-
             } catch (NumberFormatException e) {
                 System.out.println("ERROR " + e.getMessage());
                 return null;
             }
         }
 
-//        collapseParen();
-//        collapseTop(Operator.BLANK);
+        if (parenCount != 0) {
+            return null;
+        }
+
+        if (!operatorStack.isEmpty() && operatorStack.peek() == Operator.CLOSEPAREN) {
+            collapseParen();
+        }
+
+        collapseTop(Operator.BLANK);
+
 //        if (numberStack.size() == 1 && operatorStack.size() == 0) {
 //        }
 
@@ -192,10 +191,11 @@ public class Calculator {
             } else {
                 operatorStack.push(operator);
                 parenCount--;
+                collapseParen();
             }
 
         } else {
-//            collapseTop(operator);
+            collapseTop(operator);
             operatorStack.push(operator);
         }
 
