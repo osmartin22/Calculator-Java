@@ -53,7 +53,7 @@ public class Calculator {
                 NumHelper value = parseNextNum(offset);
                 numberStack.push((double) value.num);
 
-                System.out.println(value.num + " PCount: " + parenCount);
+//                System.out.println(value.num + " PCount: " + parenCount);
 
                 offset += value.stringNumLength;
                 if (offset >= operation.length()) {
@@ -64,6 +64,10 @@ public class Calculator {
                 if (offset == null || parenCount < 0) {
                     return null;
                 }
+
+//                if(offset >= operation.length()) {
+//                    break;
+//                }
 
 //                checkForCloseParen();
 
@@ -84,68 +88,63 @@ public class Calculator {
         return numberStack.pop();
     }
 
-
-    // Only to be called after parsing in a num and op
-    // Returns null if next parse is an operation that is
-    // not "(" or ")" meaning it is invalid input
-    private Integer checkFutureOp(Operator currentOp, int offset) {
+    private Integer parseNextOps(Operator prevOp, int offset) {
         Operator futureOp = parseNextOp(offset);
-        if (futureOp != Operator.BLANK) {
+        while (futureOp != Operator.BLANK) {
 
-            if (futureOp == Operator.OPENPAREN) {
-                operatorStack.push(futureOp);
-                parenCount++;
-
-            } else if (futureOp == Operator.CLOSEPAREN) {
-                if (prevIsOpenParen() || --parenCount < 0) {
+            // Invalid input, next op after "(" can only be "("
+            if (prevOp == Operator.OPENPAREN) {
+                if (prevOpIsOpenParen(futureOp) == -1) {
                     return null;
                 }
 
-                // MAYBE COLLAPSE INPUT HERE AFTER DECIDING IF * IS NECESSARY
-
-                operatorStack.push(futureOp);   // COLLAPSE TILL FIRST OPENPAREN
+            } else if (prevOp == Operator.CLOSEPAREN) {
+                preOpIsCloseParen(futureOp);
             }
 
-            // Next parsed operator creates invalid input
-            else if (currentOp != Operator.CLOSEPAREN) {
-                return null;
+            // Prev op was "+-*/" if next is ")" then invalid
+            else {
+                if (futureOp == Operator.OPENPAREN) {
+                    parenCount++;
+                    operatorStack.push(futureOp);
+                } else {
+                    return null;
+                }
             }
 
-            return parseNextSetOfOps(++offset);
+//            else if(futureOp != Operator.OPENPAREN && futureOp != Operator.CLOSEPAREN){
+//                return null;
+//            }
+
+            prevOp = futureOp;
+            futureOp = parseNextOp(++offset);
         }
 
-        // MAYBE
-        // if offset < length
-        //      check if current is CLOSEPAREN
-        //      collapse and push MULTIPLY
-
-        // OR
-        // CHECK IF CLOSEPAREN AT START OF METHOD
-        // HEN PUSH MULTIPLY IF NEEDED AFTER CHECKING NEXT OPS
-
+        if (prevOp == Operator.CLOSEPAREN) {
+            operatorStack.push(Operator.MULTIPLY);
+        }
 
         return --offset;
     }
 
-    private Integer parseNextSetOfOps(int offset) {
-        Operator operator = parseNextOp(offset);
-        while (operator != Operator.BLANK) {
-
-            if (prevIsOpenParen() && operator != Operator.OPENPAREN) {
-                return null;
-            }
-
-            if (operator == Operator.OPENPAREN) {
-                parenCount++;
-                operatorStack.push(operator);
-            }
-
-
-            operator = parseNextOp(++offset);
+    private int prevOpIsOpenParen(Operator futureOp) {
+        if (futureOp != Operator.OPENPAREN) {
+            return -1;
         }
-        return --offset;
+        operatorStack.push(futureOp);
+        parenCount++;
+        return 0;
     }
 
+    private void preOpIsCloseParen(Operator futureOp) {
+        if (futureOp == Operator.OPENPAREN) {
+            operatorStack.push(Operator.MULTIPLY);
+            parenCount++;
+        } else if (futureOp == Operator.CLOSEPAREN) {
+            parenCount--;
+        }
+        operatorStack.push(futureOp);
+    }
 
     // TODO: MAKE IT TO RECOGNIZE "(" and ")"
     // MAYBE COULD LOWER "(" and ")" priority
@@ -195,15 +194,14 @@ public class Calculator {
                 parenCount--;
             }
 
-            // CHECK NEXT OPS
-            if (++offset < operation.length()) {
-                offset = checkFutureOp(operator, offset);
-
-            }
-
         } else {
 //            collapseTop(operator);
             operatorStack.push(operator);
+        }
+
+        if (offset + 1 < operation.length()) {
+            offset = parseNextOps(operator, offset + 1);
+
         }
 
         return offset;
@@ -227,20 +225,6 @@ public class Calculator {
         }
 
         return offset;
-    }
-
-    private boolean prevIsOpenParen() {
-        if (!operatorStack.isEmpty()) {
-            return operatorStack.peek() == Operator.OPENPAREN;
-        }
-        return false;
-    }
-
-    private boolean prevIsCloseParen() {
-        if (!operatorStack.isEmpty()) {
-            return operatorStack.peek() == Operator.CLOSEPAREN;
-        }
-        return false;
     }
 
     private NumHelper parseNextNum(int offset) {

@@ -2,7 +2,7 @@
 public class Launcher {
 
     public static void main(String[] args) {
-        String operation = "5 + 2 (((53) + (2+5) 2 / 2) 7)";
+        String operation = "(5+2) + 7 + (9*2)";
 
         System.out.println(operation);
         Calculator calculator = new Calculator(operation);
@@ -19,6 +19,10 @@ public class Launcher {
     }
 
     // ((5+2))) 2 + 8
+
+    // (5+2) + 7 + (9*2) TODO: TEST
+
+
 
 
     // 5 + 2 ((2 + 3 (2*2) 3) + 9)
