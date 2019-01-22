@@ -8,29 +8,6 @@ public class Calculator {
         ADD, SUBTRACT, MULTIPLY, DIVIDE, OPENPAREN, CLOSEPAREN, BLANK
     }
 
-    // 5 + 2 (53 + (2 / 2) + 1)
-
-    // 5 2 53 1
-    // + * ( +
-
-    // 5 2
-    // +
-
-
-    // 5 + 2 ((53 + (2+5) 2 / 2) 7)
-
-    // 5 2 60*7
-    // + *
-
-
-    // 5 + (2 + 3)
-
-    // 5 2 3
-    // + ( + )
-
-    // ((3 + 2))
-
-
     private Stack<Double> numberStack;
     private Stack<Operator> operatorStack;
     private String operation;
@@ -79,14 +56,9 @@ public class Calculator {
         }
 
         collapseTop(Operator.BLANK);
-
-        System.out.println("\n" + numberStack);
-        System.out.println(operatorStack);
-
         return numberStack.pop();
     }
 
-    // Parse at the start for any ops that can make the input invalid
     private Integer preOpParse() {
         int offset = 0;
         Operator operator = parseNextOp(offset);
@@ -97,6 +69,7 @@ public class Calculator {
             operator = parseNextOp(offset);
         }
 
+        // Only "(" is a valid op before any numbers appear
         return (operator != Operator.BLANK) ? null : offset;
     }
 
@@ -119,6 +92,7 @@ public class Calculator {
             operatorStack.push(operator);
         }
 
+        // Check if more ops appear after the one we just read, and handle what to do with it
         if (offset + 1 < operation.length()) {
             offset = parseNextOps(operator, offset + 1);
 
@@ -156,7 +130,6 @@ public class Calculator {
                     return Operator.CLOSEPAREN;
             }
         }
-
         return Operator.BLANK;
     }
 
@@ -164,7 +137,7 @@ public class Calculator {
         Operator futureOp = parseNextOp(offset);
         while (futureOp != Operator.BLANK) {
 
-            // Invalid input, next op after "(" can only be "("
+            // Next op after "(" can only be "("
             if (prevOp == Operator.OPENPAREN) {
                 if (prevOpIsOpenParen(futureOp) == -1) {
                     return null;
@@ -175,11 +148,13 @@ public class Calculator {
                     return null;
                 }
 
-                // Prev op was "+-*/" if next is ")" then invalid
+
             } else {
                 if (futureOp == Operator.OPENPAREN) {
                     parenCount++;
                     operatorStack.push(futureOp);
+
+                    // Prev op was "+-*/" if next is ")" then it is invalid input
                 } else {
                     return null;
                 }
@@ -212,6 +187,12 @@ public class Calculator {
             collapseHelper();
         }
         operatorStack.pop();    // Pop "("
+
+        // Collapse even further if operator at the top is "*" or "/", else wrong result
+        // is returned due to incorrect collapsing
+        if (!operatorStack.isEmpty() && operatorPriority(operatorStack.peek()) == 3) {
+            collapseHelper();
+        }
     }
 
     private void collapseHelper() {
@@ -220,8 +201,6 @@ public class Calculator {
         Operator operator = operatorStack.pop();
         double collapsed = applyOp(first, operator, second);
         numberStack.push(collapsed);
-
-        System.out.println(first + " " + operator + " " + second + " = " + collapsed);
     }
 
     private int prevOpIsOpenParen(Operator futureOp) {
@@ -233,9 +212,7 @@ public class Calculator {
         return 0;
     }
 
-    // TODO: MAYBE FIX PROBLEM HERE
     private int prevOpIsCloseParen(Operator futureOp) {
-//        collapseTop(futureOp);
         if (futureOp == Operator.OPENPAREN) {
             operatorStack.push(Operator.MULTIPLY);
             operatorStack.push(Operator.OPENPAREN);
@@ -245,8 +222,10 @@ public class Calculator {
             if (--parenCount < 0) {
                 return -1;
             }
+
             operatorStack.push(Operator.CLOSEPAREN);
             collapseParen();
+
         } else {
             operatorStack.push(futureOp);
         }

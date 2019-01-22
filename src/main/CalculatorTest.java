@@ -9,6 +9,8 @@ public class CalculatorTest {
 
     private Calculator calculator;
 
+    // TODO: Separate tests to actually test different types of input
+    //      Currently tests are just there to test
     @Test
     public void numTest() {
         calculator = new Calculator("((5+2))) 2 + 8");
@@ -50,13 +52,11 @@ public class CalculatorTest {
         calculator = new Calculator("(5)(4)(2)");
         Assert.assertEquals((Double) 40.0, calculator.compute());
 
-//        calculator = new Calculator("(5)/(4)(2)");
-//        Assert.assertEquals((Double) 2.5, calculator.compute());
+        calculator = new Calculator("(5)/(4)(2)");
+        Assert.assertEquals((Double) 2.5, calculator.compute());
 
         calculator = new Calculator("5 / 4 * 2");
         Assert.assertEquals((Double) 2.5, calculator.compute());
-
-
     }
 
     @org.junit.After
