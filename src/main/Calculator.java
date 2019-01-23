@@ -1,5 +1,7 @@
 package main;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Stack;
 
 public class Calculator {
@@ -7,6 +9,8 @@ public class Calculator {
     private enum Operator {
         ADD, SUBTRACT, MULTIPLY, DIVIDE, OPENPAREN, CLOSEPAREN, BLANK
     }
+
+    private final int ROUND_VALUE = 5;
 
     private Stack<Double> numberStack;
     private Stack<Operator> operatorStack;
@@ -21,16 +25,16 @@ public class Calculator {
 
     public void setOperation(String operation) {
         this.operation = operation.replaceAll("\\s+", "");
-        resetCalculator();
-    }
-
-    public void resetCalculator() {
         numberStack.clear();
         operatorStack.clear();
         parenCount = 0;
     }
 
     public Double compute() {
+
+        if (operation.isEmpty()) {
+            return null;
+        }
 
         Integer preCheckOffset = preOpParse();
         if (preCheckOffset == null) {
@@ -53,7 +57,6 @@ public class Calculator {
                 }
 
             } catch (NumberFormatException e) {
-                System.out.println("ERROR " + e.getMessage());
                 return null;
             }
         }
@@ -63,11 +66,16 @@ public class Calculator {
         }
 
         if (!operatorStack.isEmpty() && operatorStack.peek() == Operator.CLOSEPAREN) {
-            collapseParen();
+            if (!collapseParen()) {
+                return null;
+            }
         }
 
-        collapseTop(Operator.BLANK);
-        return numberStack.pop();
+        if (!collapseTop(Operator.BLANK)) {
+            return null;
+        }
+
+        return (numberStack.isEmpty() ? null : roundResult(numberStack.pop()));
     }
 
     private Integer preOpParse() {
@@ -97,11 +105,15 @@ public class Calculator {
                 if (--parenCount < 0) {
                     return null;
                 }
-                collapseParen();
+                if (!collapseParen()) {
+                    return null;
+                }
             }
 
         } else {
-            collapseTop(operator);
+            if (!collapseTop(operator)) {
+                return null;
+            }
             operatorStack.push(operator);
         }
 
@@ -184,36 +196,50 @@ public class Calculator {
         return --offset;
     }
 
-    private void collapseTop(Operator futureTop) {
+    private boolean collapseTop(Operator futureTop) {
         while (operatorStack.size() >= 1 && numberStack.size() >= 2) {
             if (operatorPriority(futureTop) <= operatorPriority(operatorStack.peek())) {
-                collapseHelper();
+                if (!collapseHelper()) {
+                    return false;
+                }
             } else {
                 break;
             }
         }
+
+        return true;
     }
 
-    private void collapseParen() {
+    private boolean collapseParen() {
         operatorStack.pop();    // Pop ")"
         while (operatorStack.size() >= 1 && numberStack.size() >= 2 && operatorStack.peek() != Operator.OPENPAREN) {
-            collapseHelper();
+            if (!collapseHelper()) {
+                return false;
+            }
         }
         operatorStack.pop();    // Pop "("
 
         // Collapse even further if operator at the top is "*" or "/", else wrong result
-        // is returned due to incorrect collapsing
+        // is returned due to incorrect collapsing for some inputs
         if (!operatorStack.isEmpty() && operatorPriority(operatorStack.peek()) == 3) {
-            collapseHelper();
+            return collapseHelper();
         }
+
+        return true;
     }
 
-    private void collapseHelper() {
+    private boolean collapseHelper() {
         double second = numberStack.pop();
         double first = numberStack.pop();
         Operator operator = operatorStack.pop();
-        double collapsed = applyOp(first, operator, second);
+        Double collapsed = applyOp(first, operator, second);
+
+        if (collapsed == null) {
+            return false;
+        }
+
         numberStack.push(collapsed);
+        return true;
     }
 
     private int prevOpIsOpenParen(Operator futureOp) {
@@ -237,7 +263,9 @@ public class Calculator {
             }
 
             operatorStack.push(Operator.CLOSEPAREN);
-            collapseParen();
+            if (!collapseParen()) {
+                return -1;
+            }
 
         } else {
             operatorStack.push(futureOp);
@@ -246,7 +274,7 @@ public class Calculator {
         return 0;
     }
 
-    private double applyOp(double first, Operator operator, double second) {
+    private Double applyOp(double first, Operator operator, double second) {
         if (operator == Operator.ADD) {
             return first + second;
         } else if (operator == Operator.SUBTRACT) {
@@ -254,7 +282,7 @@ public class Calculator {
         } else if (operator == Operator.MULTIPLY) {
             return first * second;
         } else if (operator == Operator.DIVIDE) {
-            return first / second;
+            return (second == 0) ? null : first / second;
         } else return first;
     }
 
@@ -276,6 +304,14 @@ public class Calculator {
             default:
                 return 0;
         }
+    }
+
+    // Rounding since Double calculations are not exact
+    // 2.2*5.5 != 12.1 using double calculations
+    private Double roundResult(Double value) {
+        BigDecimal bd = new BigDecimal(value);
+        bd = bd.setScale(ROUND_VALUE, RoundingMode.HALF_UP);
+        return bd.doubleValue();
     }
 
     private class NumHelper {

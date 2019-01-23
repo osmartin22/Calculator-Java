@@ -7,92 +7,123 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-
 public class CalculatorTest {
 
     @Test
     public void moreCloseThanOpenParenTest() {
-        Calculator calculator = new Calculator("");
-
         List<String> operationList = new ArrayList<>();
         operationList.add("(((5+2))))");
         operationList.add("(5+2) + 3)");
         operationList.add("5+2(3)+3)-4");
+        operationList.add("((3)))");
+        operationList.add("3 + (2))");
 
+        assertNullHelper(operationList);
+    }
+
+    @Test
+    public void pemdasTestNoParen() {
+        List<Pair<Double, String>> pairList = new ArrayList<>();
+        pairList.add(new Pair<>(7.0, "1 + 2 + 3 - 4 + 5"));
+        pairList.add(new Pair<>(7.5, "1 * 2 * 3 / 4 * 5"));
+        pairList.add(new Pair<>(13.0, "1 + 2 * 3 * 5 - 9 * 2"));
+        pairList.add(new Pair<>(16.0, "1 + 2 / 2 * 4 *3 + 3"));
+        pairList.add(new Pair<>(2.5, "5 / 4 * 2"));
+
+        assertEqualsHelper(pairList);
+    }
+
+    @Test
+    public void parenMultiplicationTest() {
+        List<Pair<Double, String>> pairList = new ArrayList<>();
+        pairList.add(new Pair<>(12.0, "(3)(4)"));
+        pairList.add(new Pair<>(12.0, "3(4)"));
+        pairList.add(new Pair<>(12.0, "(3)4"));
+
+        pairList.add(new Pair<>(24.0, "(3)(4)(2)"));
+        pairList.add(new Pair<>(24.0, "(3)4(2)"));
+        pairList.add(new Pair<>(24.0, "3(4)(2)"));
+        pairList.add(new Pair<>(24.0, "(3)(4)2"));
+
+        pairList.add(new Pair<>(720.0, "(3)(4)2(5)(6)"));
+
+        assertEqualsHelper(pairList);
+    }
+
+    @Test
+    public void collapseParenTest() {
+        List<Pair<Double, String>> pairList = new ArrayList<>();
+        pairList.add(new Pair<>(1.0, "(1)"));
+        pairList.add(new Pair<>(3.0, "(1+2)"));
+        pairList.add(new Pair<>(3.0, "(((1+2)))"));
+
+        pairList.add(new Pair<>(10.0, "(1+2) + (3+4)"));
+        pairList.add(new Pair<>(21.0, "(1+2) * (3+4)"));
+        pairList.add(new Pair<>(0.5, "(1+2) / (3+3)"));
+
+        pairList.add(new Pair<>(17.0, "(1+2) + (3+4) * (2)"));
+        pairList.add(new Pair<>(30.0, "((1+2) * 3 * 2 + (4(2+1)))"));
+        pairList.add(new Pair<>(92.0, "2 + (((4 + 2) 5) 3)"));
+        pairList.add(new Pair<>(2.5, "(5)/(4)(2)"));
+        pairList.add(new Pair<>(10.0, "(5 + (2 + 3))"));
+
+        pairList.add(new Pair<>(845.0, "5 + 2 (((53) + (2+5) 2 / 2) 7)"));
+        pairList.add(new Pair<>(11.8, "(1+2*3+4/5*6)"));
+        pairList.add(new Pair<>(99.0, "5 + 2 ((2 + 3 (2*2) 3) + 9)"));
+
+        assertEqualsHelper(pairList);
+    }
+
+    @Test
+    public void divideByZeroTest() {
+        List<String> operationList = new ArrayList<>();
+        operationList.add("1/0");
+        operationList.add("(5+4) * (3/0");
+        operationList.add("(8+9)/0");
+
+        assertNullHelper(operationList);
+    }
+
+    @Test
+    public void decimalInputTest() {
+        List<Pair<Double, String>> pairList = new ArrayList<>();
+        pairList.add(new Pair<>(3.5, "1.1 + 2.4"));
+        pairList.add(new Pair<>(-1.5, "2.0 - 3.5"));
+        pairList.add(new Pair<>(9.0, "99.9 / 11.1"));
+        pairList.add(new Pair<>(12.1, "2.2 * 5.5"));
+        pairList.add(new Pair<>(5.94, "1.1(3.4 + 2)"));
+
+        assertEqualsHelper(pairList);
+    }
+
+    @Test
+    public void irregularInputTest() {
+        List<Pair<Double, String>> pairList = new ArrayList<>();
+
+        pairList.add(new Pair<>(3.0, "0000000000000000000000003"));
+        pairList.add(new Pair<>(19.0, "0000005 + 07 * 0000002"));
+        pairList.add(new Pair<>(19.0, "(005 + ((07)0002))"));
+
+        pairList.add(new Pair<>(3.5, "00000000003.50000000000000"));
+        pairList.add(new Pair<>(0.3, "0000000.30000000"));
+        pairList.add(new Pair<>(5.1, "(01.1000 + 4.000000) "));
+
+        assertEqualsHelper(pairList);
+    }
+
+    private void assertNullHelper(List<String> operationList) {
+        Calculator calculator = new Calculator("");
         for (String operation : operationList) {
             calculator.setOperation(operation);
             Assert.assertNull(calculator.compute());
         }
     }
 
-    @Test
-    public void pemdasTestNoParen() {
+    private void assertEqualsHelper(List<Pair<Double, String>> pairList) {
         Calculator calculator = new Calculator("");
-
-        List<Pair<Double, String>> pairList = new ArrayList<>();
-        pairList.add(new Pair<>(7.0, "1 + 2 + 3 - 4 + 5"));
-        pairList.add(new Pair<>(7.5, "1 * 2 * 3 / 4 * 5"));
-        pairList.add(new Pair<>(13.0, "1 + 2 * 3 * 5 - 9 * 2"));
-
         for (Pair<Double, String> pair : pairList) {
             calculator.setOperation(pair.getValue());
             Assert.assertEquals(pair.getKey(), calculator.compute());
         }
-    }
-
-    // TODO: Separate tests to actually test different types of input
-    //      Currently tests are just there to test
-    @Test
-    public void numTest() {
-        Calculator calculator;
-
-        calculator = new Calculator("((5+2))) 2 + 8");
-        Assert.assertNull(calculator.compute());
-
-        calculator = new Calculator("5 + 2 ((53 + (2+5)");
-        Assert.assertNull(calculator.compute());
-
-        calculator = new Calculator("((5+2)) 2 + 8");
-        Assert.assertEquals((Double) 22.0, calculator.compute());
-
-        calculator = new Calculator("(5+2)+1");
-        Assert.assertEquals((Double) 8.0, calculator.compute());
-
-        calculator = new Calculator("(5+2) + 7 + (9*2)");
-        Assert.assertEquals((Double) 32.0, calculator.compute());
-
-        calculator = new Calculator("5 + 2 ((2 + 3 (2*2) 3) + 9)");
-        Assert.assertEquals((Double) 99.0, calculator.compute());
-
-        calculator = new Calculator("(1+2*3+4/5*6)");
-        Assert.assertEquals((Double) 11.8, calculator.compute());
-
-        calculator = new Calculator("5 + 2 (53 + (2 / 2) + 1)");
-        Assert.assertEquals((Double) 115.0, calculator.compute());
-
-        calculator = new Calculator("5 + 2 (((53) + (2+5) 2 / 2) 7)");
-        Assert.assertEquals((Double) 845.0, calculator.compute());
-
-        calculator = new Calculator("((3 + 2))");
-        Assert.assertEquals((Double) 5.0, calculator.compute());
-
-        calculator = new Calculator("(5 + (2 + 3))");
-        Assert.assertEquals((Double) 10.0, calculator.compute());
-
-        calculator = new Calculator("5 + 2 ((53 + (2+5)))");
-        Assert.assertEquals((Double) 125.0, calculator.compute());
-
-        calculator = new Calculator("(5)(4)(2)");
-        Assert.assertEquals((Double) 40.0, calculator.compute());
-
-        calculator = new Calculator("(5)/(4)(2)");
-        Assert.assertEquals((Double) 2.5, calculator.compute());
-
-        calculator = new Calculator("5 / 4 * 2");
-        Assert.assertEquals((Double) 2.5, calculator.compute());
-    }
-
-    @org.junit.After
-    public void tearDown() throws Exception {
     }
 }
